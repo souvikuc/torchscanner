@@ -1,9 +1,18 @@
-import torch
+import torch, re
 from torch import nn
 from functools import wraps
-from functools import partial
+from functools import partial, reduce
+from torchinfo import summary
 
 from layers import LayerInfo
+from model_info import ModelInfo
+
+
+def rgetattr(obj, attr, *args):
+    def _getattr(obj, attr):
+        return getattr(obj, attr, *args)
+
+    return reduce(_getattr, [obj] + attr.split("."))
 
 
 def add_dynamic_method(self):
@@ -41,75 +50,95 @@ class ModelHooks:
     A class to manage hooks for PyTorch modules.
     """
 
-    def __init__(self, model: nn.Module):
-        self.model = model
+    def __init__(self, model_info: ModelInfo, level: int | tuple = None):
+
+        assert isinstance(
+            level, (int, tuple)
+        ), "Level must be an int or a tuple of two integers."
+        self.level = (0, level) if isinstance(level, int) else level
+        self.model_info = model_info
         self.hooks = []
         self.layer_info = []
 
-    def layer_info_hook(module, input, output, depth, index, parent):
+    @property
+    def included_children(self):
+        return self.model_info.get_children(level=self.level)
+
+    @property
+    def included_gchildren(self):
+        gchildren = {}
+        for child_included in self.included_children:
+            search_pattern = f"{child_included}.[^.]+$"
+            _search_func = lambda x: re.match(search_pattern, x)
+            gchildren[child_included] = list(
+                filter(_search_func, self.model_info.module_list)
+            )
+        return gchildren
+
+    @property
+    def model(self):
+        return self.model_info.model
+
+    def layer_info_hook(self, module, input, output, name, children):
         class_name = module.__class__.__name__
-        # name = module.__name__
-        # print(class_name)
-        children = module._modules
+        # nam = name
+        depth = len(name.split(".")) - 1
+        parent = name.rsplit(".", maxsplit=1)[0]
 
         layerinfo = LayerInfo(
-            # name=name,
+            name=name,
             layer=module,
             depth=depth,
-            index=index,
             parent=parent,
             children=children,
             class_name=class_name,
             input_shape=list(input[0].shape),
             output_shape=list(output.shape),
         )
-        # result.append(
-        #     [depth, index, class_name, list(input[0].shape), list(output.shape)]
-        # )
         self.layer_info.append(layerinfo)
 
         print(
-            f"{depth,index}  {class_name:<20} Input Shape: {str(input[0].shape):<30} Output Shape: {str(output.shape):<30}"
+            f"{name:<15}{class_name:<10} I-Shape: {list(input[0].shape)} O-Shape: {list(output.shape)}, children: {children}, parent: {parent}"
         )
 
-    def add_register_hook_methods(self):
-        @add_dynamic_method(self.model)
-        def register_layer_hooks(module, hook_fn, depth, index=0, parent=None):
+    def register_layer_hooks(self, hook_fn):
+        for layer in self.included_children:
+            gchildren = self.included_gchildren.get(layer, [])
+            handle = rgetattr(self.model, layer).register_forward_hook(
+                partial(hook_fn, name=layer, children=gchildren)
+            )
+            self.hooks.append(handle)
 
-            while depth >= 0:
-                for name, modl in module.named_children():
-                    if not (len(modl._modules) == 0):
-                        handle = register_layer_hooks(
-                            modl, hook_fn, depth=depth - 1, index=0, parent=name
-                        )
-                        print("xx", name)
-                        self.hooks.append(handle)
+    # def add_register_hook_methods(self):
+    #     @add_dynamic_method(self.model)
+    #     def register_layer_hooks(module, hook_fn, depth, index=0, parent=None):
 
-                    else:
-                        print("yy", name)
-                        handle = modl.register_forward_hook(
-                            partial(
-                                hook_fn, depth=depth, index=index + 1, parent=parent
-                            )
-                        )
-                        # print("yy", handle)
-                        self.hooks.append(handle)
-                break
+    #         while depth >= 0:
+    #             for name, modl in module.named_children():
+    #                 if not (len(modl._modules) == 0):
+    #                     handle = register_layer_hooks(
+    #                         modl, hook_fn, depth=depth - 1, index=0, parent=name
+    #                     )
+    #                     print("xx", name)
+    #                     self.hooks.append(handle)
 
-            # return self.hooks
+    #                 else:
+    #                     print("yy", name)
+    #                     handle = modl.register_forward_hook(
+    #                         partial(
+    #                             hook_fn, depth=depth, index=index + 1, parent=parent
+    #                         )
+    #                     )
+    #                     # print("yy", handle)
+    #                     self.hooks.append(handle)
+    #             break
+
+    #         # return self.hooks
 
     def run(self, input_size):
         dummy_input = torch.randn(*input_size)
         # print("XXXX", dummy_input.shape)
         self.model(dummy_input)
-
-    def add_forward_hook(self, hook_fn):
-        """
-        Add a forward hook to the module.
-        """
-        handle = self.model.register_forward_hook(hook_fn)
-        self.hooks.append(handle)
-        return handle
 
     def remove_hooks(self):
         """
@@ -168,17 +197,61 @@ if __name__ == "__main__":
             # x = self.softmax(x)
             return x1, x2
 
-    mymodel = ImageMulticlassClassificationNet()
+    class Block(nn.Module):
+        def __init__(self, in_features, out_features):
+            super().__init__()
+            self.fc1 = nn.Linear(in_features, 10)
+            # self.fc2 = nn.Linear(10, 20)
+            self.fc2 = nn.Linear(10, out_features)
+            # self.relu = nn.ReLU()
 
-    m = ModelHooks(mymodel)
+        def forward(self, x):
+            return self.fc2(self.fc1(x))
 
-    m.add_hook_methods()
-    m.add_register_hook_methods()
+    class NestedModel(nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.block1 = Block(8, 16)
+            self.block2 = Block(16, 32)
+            self.nested_block = nn.Sequential(Block(32, 64), Block(64, 128))
+            self.final_conv = nn.Linear(128, 10)
 
-    m.model.register_layer_hooks(m.model, m.model.layer_info_hook, 0)
-    print(len(m.hooks))
-    print(len(m.layer_info))
+        def forward(self, x):
+            x = self.block1(x)
+            x = self.block2(x)
+            x = self.nested_block(x)
+            x = self.final_conv(x)
+            return x
 
-    m.run((1, 1, 50, 50))
-    print(len(m.hooks))
-    print(len(m.layer_info))
+    mymodel = NestedModel()
+    # mymodel = ImageMulticlassClassificationNet()
+    n = 2
+    mi = ModelInfo(mymodel)
+    mh = ModelHooks(mi, level=n)
+
+    print("model_check", mi.model is mh.model)
+
+    print(len(mh.hooks))
+
+    # mh.run((1, 8))
+    print(len(mh.hooks))
+    print("1 done")
+
+    mh.register_layer_hooks(mh.layer_info_hook)
+    print(len(mh.hooks))
+    mh.run((1, 8))
+    mh.remove_hooks()
+    # print(len(mh.hooks))
+    # print(len(m.layer_info))
+    summary(
+        mymodel,
+        (1, 8),
+        depth=n,
+        col_names=[
+            "input_size",
+            "output_size",
+            # "num_params",
+            # "params_percent",
+        ],
+        row_settings=["var_names", "depth"],
+    )

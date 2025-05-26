@@ -1,17 +1,10 @@
 import torch
 from torch import nn
 from torchinfo import summary
-from functools import wraps, partial, reduce
+from functools import wraps, partial
 from copy import deepcopy
 from torchvision import models
 from pprint import pprint
-
-
-def rgetattr(obj, attr, *args):
-    def _getattr(obj, attr):
-        return getattr(obj, attr, *args)
-
-    return reduce(_getattr, [obj] + attr.split("."))
 
 
 class ModelInfo:
@@ -21,143 +14,75 @@ class ModelInfo:
 
     def __init__(self, model: nn.Module):
         self.model = model
-        self.output = []
-        self.children = {}
+
+    @property
+    def module_list(self) -> list:
+        """
+        Returns the names of the children of a PyTorch model.
+        Args:
+            module: The PyTorch model.
+        Returns:
+            A list of module names.
+        """
+        modules_all = map(lambda x: x[0], self.model.named_modules())
+        return list(filter(len, modules_all))
 
     @property
     def depth(self) -> int:
         """
-        Calculates the depth of the model.
+        Returns the depth of the model.
         Returns:
             The depth of the model.
         """
-        return self.get_model_depth(self.model)
+        modules_splitted = map(lambda x: x.split("."), self.module_list)
+        modules_depth_index = map(len, modules_splitted)
 
-    def get_model_depth(self, module: nn.Module) -> int:
-        """
-        Calculates the depth of a PyTorch model.
-        Args:
-            model: The PyTorch model.
-        Returns:
-            The depth of the model.
-        """
-        max_depth = 0
-        for n, child in module.named_children():
-            if len(child._modules) != 0:
-                d = 1 + self.get_model_depth(child)
-                max_depth = max(max_depth, d)
-            else:
-                max_depth = max(max_depth, 0)
-        return max_depth
+        return max(modules_depth_index) - 1
 
-    def is_leaf(self, module: nn.Module) -> bool:
-        return len(module._modules) == 0
-
-    def separate_children(self, module: nn.Module) -> dict:
-        """
-        Separates the children of a PyTorch model into a dictionary.
-        Args:
-            model: The PyTorch model.
-        Returns:
-            A dictionary of the children of the model.
-        """
-        mono = dict(filter(lambda x: len(x[-1]._modules) == 0, module.named_children()))
-        poly = dict(filter(lambda x: len(x[-1]._modules) != 0, module.named_children()))
-        return dict([("mono", mono), ("poly", poly)])
-
-    def all_leaf(self, module: nn.Module) -> bool:
-        return all(map(lambda x: self.is_leaf(x), module.children()))
-
-    def get_children(
-        self,
-        module: nn.Module,
-        level: int = 0,
-        index: int = 0,
-        # result: dict = {},
-        name: str = "base",
-    ) -> dict:
-        # module_depth = self.get_model_depth(module)
-        # print(f"{'    '*index}entering index {index} level of {name,level}")
-        # print(f"{'    '*index}child {list(dict(module.named_children()).keys())}")
-        # if level > module_depth:
-        #     level = module_depth
-        result = {}
-
-        if index == level:
-            # print(f"{'    '*index}running base case at level {index,level} of {name}")
-            # if (index == level) or (self.all_leaf(module)):
-            result.update({name: dict(module.named_children())})
-            # result[name] = dict(module.named_children())
-            # return dict(module.named_children())
-            print(result, end="\n\n")
-            return result
-
-        for i, (name_c, child) in enumerate(module.named_children()):
-            print(
-                # f"{'    '*index}(Before {name}.{name_c} at level {index} out of {level})"
-            )
-            if not self.is_leaf(child):
-                x = self.get_children(child, level, index=index + 1, name=name_c)
-                # print(f"{'    '*index}nl_XX", name_c, x, end="\n\n")
-                # result[name_c] = x
-                # print(f"{'    '*index}x{x}")
-                result.update(x)
-            else:
-                # print(f"{'    '*index}l_XX", name_c, child, end="\n\n")
-                # self.children[name_c] = child
-                result.update({name_c: child})
-                # result[name_c] = child
-            # print(f"{'    '*index}so far", name_c, result, end="\n\n")
-
-            # print(f"{'    '*index}after {index} level")
-            # print(f"{'    '*index}processed {name_c}-----")
-            # print(
-            #     # f"{'    '*index}(After {name}.{name_c} at level {index} out of {level})",
-            #     "\n",
-            #     f"{'    '*index}{result}",
-            #     end="\n\n",
-            # )
-            # print("    " * index, result)
-            # e = {name: result}
-            # print("    " * index, e, end="\n\n" * index)
-        return result
-
-    # function used for removing nested
-    # lists in python using recursion
-    def reemovNestings(self, l):
-        for i in l:
-            if type(i) == list:
-                self.reemovNestings(i)
-            else:
-                self.output.append(i)
-
-    def get_layer_names(self, level, model) -> list:
-        """
-        Returns the names of the layers in the model.
-        Returns:
-            A list of layer names.
-        """
-        # print(self.depth)
-        try:
-            assert level <= self.depth
-        except:
-            level = self.depth
-
-        layer_names = []
-        if level == 1:
-            print("x")
-            return [name for name, _ in model.named_children()]
+    def get_children(self, level: tuple = None) -> list:
+        if level[0] == level[1]:
+            _child_func = lambda x: len(x.split(".")) == level[0] + 1
         else:
-            for name, child in model.named_children():
-                if len(child._modules) != 0:
-                    # layer_names.append(name)
-                    self.reemovNestings(self.get_layer_names(level - 1, child))
-                    # layer_names.extend(self.get_layer_names(child))
-                    layer_names.append([f"{name}.{n}" for n in self.output])
-                else:
-                    layer_names.append([])
+            mini, maxi = min(level), max(level)
+            _child_func = lambda x: (len(x.split(".")) >= mini + 1) and (
+                len(x.split(".")) <= maxi + 1
+            )
+        return list(filter(_child_func, self.module_list))
 
-        return layer_names
+    # def get_model_depth(self, module: nn.Module) -> int:
+    #     """
+    #     Calculates the depth of a PyTorch model.
+    #     Args:
+    #         model: The PyTorch model.
+    #     Returns:
+    #         The depth of the model.
+    #     """
+    #     max_depth = 0
+    #     for n, child in module.named_children():
+    #         if len(child._modules) != 0:
+    #             d = 1 + self.get_model_depth(child)
+    #             max_depth = max(max_depth, d)
+    #         else:
+    #             max_depth = max(max_depth, 0)
+    #     return max_depth
+
+    # def is_leaf(self, module: nn.Module) -> bool:
+    #     return len(module._modules) == 0
+
+    # def separate_children(self, module: nn.Module) -> dict:
+    #     """
+    #     Separates the children of a PyTorch model into a dictionary.
+    #     Args:
+    #         model: The PyTorch model.
+    #     Returns:
+    #         A dictionary of the children of the model.
+    #     """
+    #     mono = dict(filter(lambda x: len(x[-1]._modules) == 0, module.named_children()))
+    #     poly = dict(filter(lambda x: len(x[-1]._modules) != 0, module.named_children()))
+    #     return dict([("mono", mono), ("poly", poly)])
+
+    # def all_leaf(self, module: nn.Module) -> bool:
+    #     return all(map(lambda x: self.is_leaf(x), module.children()))
 
 
 if __name__ == "__main__":
@@ -258,9 +183,19 @@ if __name__ == "__main__":
     model = NestedModel()
     # vgg = models.vgg19(weights=True)
     mi = ModelInfo(model)
+    n = 1
     print(f"The depth of the model is: {mi.depth}")
-    # print(f"The children of the model are:\n {mi.get_children(model,level=0)}")
-    n = 2
+    # print(f"The depth of the model is: {mi.get_depth}")
+    print(f"The modules of the model is: {mi.module_list}")
+    print(
+        f"The {n}-th level children of the model are (w_acc):\n {mi.get_children(level=n)}",
+        end="\n\n",
+    )
+    print(
+        f"The {n}-th level children of the model are (wo_acc):\n {mi.get_children(level=n)}",
+        end="\n\n\n\n\n",
+    )
+
     summary(
         model,
         (1, 8),
@@ -273,5 +208,3 @@ if __name__ == "__main__":
         ],
         row_settings=["var_names", "depth"],
     )
-    res = mi.get_children(model, level=n)
-    pprint({k: v for k, v in res.items()})

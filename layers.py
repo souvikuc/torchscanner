@@ -6,26 +6,26 @@ from functools import wraps
 class LayerInfo:
     def __init__(
         self,
-        # name,
+        name,
         layer,
         depth,
-        index,
+        # index,
         parent,
         children,
         class_name,
         input_shape,
         output_shape,
     ):
-        # self.name = name
+        self.name = name
         self.layer = layer
         self.depth = depth
-        self.index = index
+        # self.index = index
         self.parent = parent
         self.children = children
         self.class_name = class_name
         self.input_shape = input_shape
         self.output_shape = output_shape
-        self.children = []
+        # self.children = []
 
     @property
     def is_leaf(self):

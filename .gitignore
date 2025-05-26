@@ -172,3 +172,9 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+
+#custom
+*_old.py
+*_temp.py
+tempCodeRunnerFile.py

@@ -81,9 +81,10 @@ class ModelHooks:
 
     def layer_info_hook(self, module, input, output, name, children):
         class_name = module.__class__.__name__
-        # nam = name
         depth = len(name.split(".")) - 1
         parent = name.rsplit(".", maxsplit=1)[0]
+        if name == parent:
+            parent = self.model.__class__.__name__
 
         layerinfo = LayerInfo(
             name=name,
@@ -108,32 +109,6 @@ class ModelHooks:
                 partial(hook_fn, name=layer, children=gchildren)
             )
             self.hooks.append(handle)
-
-    # def add_register_hook_methods(self):
-    #     @add_dynamic_method(self.model)
-    #     def register_layer_hooks(module, hook_fn, depth, index=0, parent=None):
-
-    #         while depth >= 0:
-    #             for name, modl in module.named_children():
-    #                 if not (len(modl._modules) == 0):
-    #                     handle = register_layer_hooks(
-    #                         modl, hook_fn, depth=depth - 1, index=0, parent=name
-    #                     )
-    #                     print("xx", name)
-    #                     self.hooks.append(handle)
-
-    #                 else:
-    #                     print("yy", name)
-    #                     handle = modl.register_forward_hook(
-    #                         partial(
-    #                             hook_fn, depth=depth, index=index + 1, parent=parent
-    #                         )
-    #                     )
-    #                     # print("yy", handle)
-    #                     self.hooks.append(handle)
-    #             break
-
-    #         # return self.hooks
 
     def run(self, input_size):
         dummy_input = torch.randn(*input_size)
@@ -230,17 +205,20 @@ if __name__ == "__main__":
     mh = ModelHooks(mi, level=n)
 
     print("model_check", mi.model is mh.model)
-
-    print(len(mh.hooks))
+    print("non-train", mi.trainable_params)
 
     # mh.run((1, 8))
     print(len(mh.hooks))
+    print(len(mh.layer_info))
     print("1 done")
 
     mh.register_layer_hooks(mh.layer_info_hook)
     print(len(mh.hooks))
+    print(len(mh.layer_info))
+    print("2 done")
     mh.run((1, 8))
     mh.remove_hooks()
+    print(len(mh.layer_info))
     # print(len(mh.hooks))
     # print(len(m.layer_info))
     summary(

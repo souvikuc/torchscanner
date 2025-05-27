@@ -16,6 +16,29 @@ class ModelInfo:
         self.model = model
 
     @property
+    def trainable(self):
+        return any(p.requires_grad for p in self.model.parameters())
+
+    @property
+    def total_params(self) -> int:
+        """
+        Returns the total number of parameters in the model.
+        Returns:
+            The total number of parameters in the model.
+        """
+        return sum(p.numel() for p in self.model.parameters())
+
+    @property
+    def trainable_params(self):
+        return sum(p.numel() for p in self.model.parameters() if p.requires_grad)
+
+    @property
+    def non_trainable_params(self):
+        x = self.total_params - self.trainable_params
+        # x = sum(p.numel() for p in self.model.parameters() if not p.requires_grad)
+        return x
+
+    @property
     def module_list(self) -> list:
         """
         Returns the names of the children of a PyTorch model.
@@ -25,7 +48,7 @@ class ModelInfo:
             A list of module names.
         """
         modules_all = map(lambda x: x[0], self.model.named_modules())
-        return list(filter(len, modules_all))
+        return filter(len, modules_all)
 
     @property
     def depth(self) -> int:
@@ -48,23 +71,6 @@ class ModelInfo:
                 len(x.split(".")) <= maxi + 1
             )
         return list(filter(_child_func, self.module_list))
-
-    # def get_model_depth(self, module: nn.Module) -> int:
-    #     """
-    #     Calculates the depth of a PyTorch model.
-    #     Args:
-    #         model: The PyTorch model.
-    #     Returns:
-    #         The depth of the model.
-    #     """
-    #     max_depth = 0
-    #     for n, child in module.named_children():
-    #         if len(child._modules) != 0:
-    #             d = 1 + self.get_model_depth(child)
-    #             max_depth = max(max_depth, d)
-    #         else:
-    #             max_depth = max(max_depth, 0)
-    #     return max_depth
 
     # def is_leaf(self, module: nn.Module) -> bool:
     #     return len(module._modules) == 0

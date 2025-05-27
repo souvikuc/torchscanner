@@ -1,10 +1,7 @@
 import torch
 from torch import nn
 from torchinfo import summary
-from functools import wraps, partial
-from copy import deepcopy
 from torchvision import models
-from pprint import pprint
 
 
 class ModelInfo:
@@ -72,24 +69,6 @@ class ModelInfo:
             )
         return list(filter(_child_func, self.module_list))
 
-    # def is_leaf(self, module: nn.Module) -> bool:
-    #     return len(module._modules) == 0
-
-    # def separate_children(self, module: nn.Module) -> dict:
-    #     """
-    #     Separates the children of a PyTorch model into a dictionary.
-    #     Args:
-    #         model: The PyTorch model.
-    #     Returns:
-    #         A dictionary of the children of the model.
-    #     """
-    #     mono = dict(filter(lambda x: len(x[-1]._modules) == 0, module.named_children()))
-    #     poly = dict(filter(lambda x: len(x[-1]._modules) != 0, module.named_children()))
-    #     return dict([("mono", mono), ("poly", poly)])
-
-    # def all_leaf(self, module: nn.Module) -> bool:
-    #     return all(map(lambda x: self.is_leaf(x), module.children()))
-
 
 if __name__ == "__main__":
 
@@ -141,6 +120,7 @@ if __name__ == "__main__":
             return x1, x2
 
     mymodel = ImageMulticlassClassificationNet()
+    # mymodel = models.vgg19(weights=True)
 
     class Block(nn.Module):
         def __init__(self, in_features, out_features):
@@ -186,8 +166,8 @@ if __name__ == "__main__":
             return x
 
     # model = Block(3, 16)
-    model = NestedModel()
-    # vgg = models.vgg19(weights=True)
+    # model = NestedModel()
+    model = models.vgg19(weights=True)
     mi = ModelInfo(model)
     n = 1
     print(f"The depth of the model is: {mi.depth}")
@@ -204,7 +184,7 @@ if __name__ == "__main__":
 
     summary(
         model,
-        (1, 8),
+        (1, 3, 512, 512),
         depth=n,
         col_names=[
             "input_size",

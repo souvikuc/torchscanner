@@ -8,6 +8,7 @@ from layers import LayerInfo
 from model_info import ModelInfo
 
 
+# Magic function to get torch model layers by name using dot notations
 def rgetattr(obj, attr, *args):
     def _getattr(obj, attr):
         return getattr(obj, attr, *args)
@@ -79,13 +80,25 @@ class ModelHooks:
     def model(self):
         return self.model_info.model
 
+    def get_parent_name(self, name):
+        """
+        Get the parent name of a given layer name.
+        Args:
+            name (str): The name of the layer.
+        Returns:
+            str: The parent name of the layer.
+        """
+        return (
+            name.rsplit(".", maxsplit=1)[0]
+            if "." in name
+            else self.model.__class__.__name__
+        )
+
     def layer_info_hook(self, module, input, output, name, children):
         class_name = module.__class__.__name__
         depth = len(name.split(".")) - 1
-        parent = name.rsplit(".", maxsplit=1)[0]
-        if name == parent:
-            parent = self.model.__class__.__name__
-
+        parent = self.get_parent_name(name)
+        input_shape = [tuple(i.shape) for i in input]
         layerinfo = LayerInfo(
             name=name,
             layer=module,
@@ -93,18 +106,18 @@ class ModelHooks:
             parent=parent,
             children=children,
             class_name=class_name,
-            input_shape=list(input[0].shape),
-            output_shape=list(output.shape),
+            input_shape=input_shape,
+            output_shape=tuple(output.shape),
         )
         self.layer_info.append(layerinfo)
 
         print(
-            f"{name:<15}{class_name:<10} I-Shape: {list(input[0].shape)} O-Shape: {list(output.shape)}, children: {children}, parent: {parent}"
+            f"{name:<15}{class_name:<10}{depth} I-Shape: {input_shape} O-Shape: {tuple(output.shape)}, children: {children}, parent: {parent}"
         )
 
     def register_layer_hooks(self, hook_fn):
         for layer in self.included_children:
-            gchildren = self.included_gchildren.get(layer, [])
+            gchildren = self.included_gchildren.get(layer, "None")
             handle = rgetattr(self.model, layer).register_forward_hook(
                 partial(hook_fn, name=layer, children=gchildren)
             )

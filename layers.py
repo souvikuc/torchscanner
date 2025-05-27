@@ -21,7 +21,7 @@ class LayerInfo:
         self.children = children
         self.class_name = class_name
         self.input_shape = input_shape
-        self.output_shape = output_shape
+        self.output_shape = tuple(output_shape)
 
     @property
     def is_leaf(self):
@@ -44,6 +44,13 @@ class LayerInfo:
         x = self.total_params - self.trainable_params
         # x = sum(p.numel() for p in self.layer.parameters() if not p.requires_grad)
         return x
+
+    def infodict(self, *col_names):
+        info = {}
+        for col_name in col_names:
+            info[col_name] = getattr(self, col_name, None)
+        # x = sum(p.numel() for p in self.layer.parameters() if not p.requires_grad)
+        return info
 
     def __repr__(self):
         return f"{self.class_name}"

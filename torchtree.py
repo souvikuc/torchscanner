@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 from torchinfo import summary
+from torchvision import models
 
 from hooks import ModelHooks
 from layers import LayerInfo
@@ -131,20 +132,37 @@ if __name__ == "__main__":
             return x
 
     mymodel = NestedModel()
+    # mymodel = models.vgg19(weights=models.VGG19_Weights.DEFAULT)
     # mymodel = ImageMulticlassClassificationNet()
-    n = 2
+    n = 1
     tt = TorchTree(mymodel, input_size=(1, 8), level=n)
 
     tt.module_summary()
-    summary(
-        mymodel,
-        (1, 8),
-        depth=n,
-        col_names=[
-            "input_size",
-            "output_size",
-            # "num_params",
-            # "params_percent",
-        ],
-        row_settings=["var_names", "depth"],
+
+    y = tt.model_hooks.layer_info[0].infodict(
+        "name",
+        "class_name",
+        "depth",
+        "parent",
+        "children",
+        "input_shape",
+        "output_shape",
+        "is_leaf",
+        "trainable",
+        "total_params",
+        "trainable_params",
+        "non_trainable_params",
     )
+    print(y)
+    # summary(
+    #     mymodel,
+    #     (1, 3, 512, 512),
+    #     depth=n,
+    #     col_names=[
+    #         "input_size",
+    #         "output_size",
+    #         # "num_params",
+    #         # "params_percent",
+    #     ],
+    #     row_settings=["var_names", "depth"],
+    # )

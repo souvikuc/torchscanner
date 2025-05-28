@@ -1,6 +1,12 @@
 import torch
 from torch import nn
 
+from rich.theme import Theme
+from rich.console import Console
+from rich.traceback import install
+
+install(show_locals=True, theme="monokai", word_wrap=True)
+
 
 class LayerInfo:
     def __init__(

@@ -2,10 +2,16 @@ import torch
 from torch import nn
 from torchinfo import summary
 from torchvision import models
+from rich import print as rprint
+from rich.theme import Theme
+from rich.console import Console
+from rich.traceback import install
 
 from hooks import ModelHooks
 from layers import LayerInfo
 from model_info import ModelInfo
+
+install(show_locals=True, theme="monokai", word_wrap=True)
 
 
 class TorchTree:
@@ -153,7 +159,7 @@ if __name__ == "__main__":
         "trainable_params",
         "non_trainable_params",
     )
-    print(y)
+    rprint(y)
     # summary(
     #     mymodel,
     #     (1, 3, 512, 512),

@@ -3,9 +3,14 @@ from torch import nn
 from functools import wraps
 from functools import partial, reduce
 from torchinfo import summary
+from rich.theme import Theme
+from rich.console import Console
+from rich.traceback import install
 
 from layers import LayerInfo
 from model_info import ModelInfo
+
+install(show_locals=True, theme="monokai", word_wrap=True)
 
 
 # Magic function to get torch model layers by name using dot notations

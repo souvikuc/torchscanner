@@ -3,11 +3,7 @@ from torch import nn
 from torchinfo import summary
 from torchvision import models
 
-from rich.theme import Theme
-from rich.console import Console
-from rich.traceback import install
-
-install(show_locals=True, theme="monokai", word_wrap=True)
+from layer_info import LayerInfo
 
 
 class ModelInfo:
@@ -21,6 +17,10 @@ class ModelInfo:
     @property
     def trainable(self):
         return any(p.requires_grad for p in self.model.parameters())
+
+    @property
+    def parameters(self):
+        return [name for name in self.model.named_parameters()]
 
     @property
     def total_params(self) -> int:
@@ -176,27 +176,16 @@ if __name__ == "__main__":
     model = models.vgg19(weights=True)
     mi = ModelInfo(model)
     n = 1
-    print(f"The depth of the model is: {mi.depth}")
-    # print(f"The depth of the model is: {mi.get_depth}")
-    print(f"The modules of the model is: {mi.module_list}")
-    print(
-        f"The {n}-th level children of the model are (w_acc):\n {mi.get_children(level=n)}",
-        end="\n\n",
-    )
-    print(
-        f"The {n}-th level children of the model are (wo_acc):\n {mi.get_children(level=n)}",
-        end="\n\n\n\n\n",
-    )
 
-    summary(
-        model,
-        (1, 3, 512, 512),
-        depth=n,
-        col_names=[
-            "input_size",
-            "output_size",
-            # "num_params",
-            # "params_percent",
-        ],
-        row_settings=["var_names", "depth"],
-    )
+    # summary(
+    #     model,
+    #     (1, 3, 512, 512),
+    #     depth=n,
+    #     col_names=[
+    #         "input_size",
+    #         "output_size",
+    #         # "num_params",
+    #         # "params_percent",
+    #     ],
+    #     row_settings=["var_names", "depth"],
+    # )

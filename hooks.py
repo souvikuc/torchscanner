@@ -3,14 +3,11 @@ from torch import nn
 from functools import wraps
 from functools import partial, reduce
 from torchinfo import summary
-from rich.theme import Theme
-from rich.console import Console
-from rich.traceback import install
 
-from layers import LayerInfo
+from rich import print as rprint
+
+from layer_info import LayerInfo
 from model_info import ModelInfo
-
-install(show_locals=True, theme="monokai", word_wrap=True)
 
 
 # Magic function to get torch model layers by name using dot notations
@@ -104,6 +101,7 @@ class ModelHooks:
         depth = len(name.split(".")) - 1
         parent = self.get_parent_name(name)
         input_shape = [tuple(i.shape) for i in input]
+        name = ".".join([self.model.__class__.__name__, name])
         layerinfo = LayerInfo(
             name=name,
             layer=module,
@@ -115,10 +113,9 @@ class ModelHooks:
             output_shape=tuple(output.shape),
         )
         self.layer_info.append(layerinfo)
-
-        print(
-            f"{name:<15}{class_name:<10}{depth} I-Shape: {input_shape} O-Shape: {tuple(output.shape)}, children: {children}, parent: {parent}"
-        )
+        # rprint(
+        #     f"{name:<15}{class_name:<10}{depth} I-Shape: {input_shape} O-Shape: {tuple(output.shape)}, children: {children}, parent: {parent}"
+        # )
 
     def register_layer_hooks(self, hook_fn):
         for layer in self.included_children:
@@ -130,7 +127,6 @@ class ModelHooks:
 
     def run(self, input_size):
         dummy_input = torch.randn(*input_size)
-        # print("XXXX", dummy_input.shape)
         self.model(dummy_input)
 
     def remove_hooks(self):
@@ -222,32 +218,21 @@ if __name__ == "__main__":
     mi = ModelInfo(mymodel)
     mh = ModelHooks(mi, level=n)
 
-    print("model_check", mi.model is mh.model)
-    print("non-train", mi.trainable_params)
-
-    # mh.run((1, 8))
-    print(len(mh.hooks))
-    print(len(mh.layer_info))
-    print("1 done")
+    rprint("model_check", mi.model is mh.model)
+    rprint("non-train", mi.trainable_params)
 
     mh.register_layer_hooks(mh.layer_info_hook)
-    print(len(mh.hooks))
-    print(len(mh.layer_info))
-    print("2 done")
     mh.run((1, 8))
     mh.remove_hooks()
-    print(len(mh.layer_info))
-    # print(len(mh.hooks))
-    # print(len(m.layer_info))
-    summary(
-        mymodel,
-        (1, 8),
-        depth=n,
-        col_names=[
-            "input_size",
-            "output_size",
-            # "num_params",
-            # "params_percent",
-        ],
-        row_settings=["var_names", "depth"],
-    )
+    # summary(
+    #     mymodel,
+    #     (1, 8),
+    #     depth=n,
+    #     col_names=[
+    #         "input_size",
+    #         "output_size",
+    #         # "num_params",
+    #         # "params_percent",
+    #     ],
+    #     row_settings=["var_names", "depth"],
+    # )

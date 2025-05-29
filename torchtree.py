@@ -2,16 +2,12 @@ import torch
 from torch import nn
 from torchinfo import summary
 from torchvision import models
+from rich.tree import Tree
 from rich import print as rprint
-from rich.theme import Theme
-from rich.console import Console
-from rich.traceback import install
+from bigtree import dict_to_tree
 
 from hooks import ModelHooks
-from layers import LayerInfo
 from model_info import ModelInfo
-
-install(show_locals=True, theme="monokai", word_wrap=True)
 
 
 class TorchTree:
@@ -21,45 +17,70 @@ class TorchTree:
 
     def __init__(
         self,
-        model: nn.Module,
-        input_data=None,
-        input_size=None,
+        model_hooks: ModelHooks,
         level: int | tuple = None,
     ):
+        self.model_hooks = model_hooks
 
-        self.model_info = ModelInfo(model)
-        self.input_size = input_size
-        self.input_data = input_data
-        self.model_hooks = ModelHooks(self.model_info, level)
+    @property
+    def model(self):
+        return self.model_hooks.model
 
-    def get_dummy_input(self):
+    def get_dummy_inputs(self, input_data=None, input_size=None):
         """
         Returns a dummy input tensor based on the model's input shape.
         Returns:
             A dummy input tensor.
         """
-        input_data_specified = (self.input_data is not None) or (
-            self.input_size is not None
-        )
+        input_data_specified = (input_data is not None) or (input_size is not None)
 
-        if input_data_specified and self.input_size is not None:
-            return torch.randn(*self.input_size)
-        elif input_data_specified and self.input_data is not None:
-            return self.input_data
+        if input_data_specified and input_size is not None:
+            return torch.randn(*input_size)
+        elif input_data_specified and input_data is not None:
+            return input_data
         else:
             raise ValueError("Input data or size must be defined in the model.")
 
-    def module_summary(self):
-        """
-        Returns a summary of the model's modules.
-        Returns:
-            A list of LayerInfo objects representing the model's modules.
-        """
-        self.model_hooks.register_layer_hooks(self.model_hooks.layer_info_hook)
 
-        dummy_input = self.get_dummy_input()
-        self.model_hooks.model(dummy_input)
-        self.model_hooks.remove_hooks()
+def summary_table(
+    model: nn.Module, input_data=None, input_size=None, level: int | tuple = None
+):
+    model_info = ModelInfo(model)
+    model_hooks = ModelHooks(model_info, level)
+    model_hooks.register_layer_hooks(model_hooks.layer_info_hook)
+    torchtree = TorchTree(model_hooks, level)
+
+    dummy_inputs = torchtree.get_dummy_inputs(input_data, input_size)
+    torchtree.model(dummy_inputs)
+    model_hooks.remove_hooks()
+    # rprint(
+    #     model_hooks.layer_info[0].infodict(
+    #         "name",
+    #         "class_name",
+    #     )
+    # )
+
+
+def summary_tree(
+    model: nn.Module, input_data=None, input_size=None, level: int | tuple = None
+):
+    model_info = ModelInfo(model)
+    model_hooks = ModelHooks(model_info, level)
+    model_hooks.register_layer_hooks(model_hooks.layer_info_hook)
+    torchtree = TorchTree(model_hooks, level)
+
+    dummy_inputs = torchtree.get_dummy_inputs(input_data, input_size)
+    torchtree.model(dummy_inputs)
+    model_hooks.remove_hooks()
+
+    tree_dict = {
+        layer.name: layer.infodict("class_name") for layer in model_hooks.layer_info
+    }
+    root = dict_to_tree(tree_dict, sep=".")
+    root.show(attr_list=["class_name"], attr_bracket=("(", ")"))
+    # keyf = lambda text: text.split(".")[0]
+    # y1 = {i.name for i in model_hooks.layer_info}
+    # r = [list(items) for gr, items in groupby(sorted(y1), key=keyf)]
 
 
 if __name__ == "__main__":
@@ -139,30 +160,30 @@ if __name__ == "__main__":
 
     mymodel = NestedModel()
     # mymodel = models.vgg19(weights=models.VGG19_Weights.DEFAULT)
+    # mymodel = models.resnet50(weights=models.ResNet50_Weights.IMAGENET1K_V1)
     # mymodel = ImageMulticlassClassificationNet()
-    n = 1
-    tt = TorchTree(mymodel, input_size=(1, 8), level=n)
+    n = 2
+    # summary_table(mymodel, input_size=(1, 3, 512, 512), level=n)
+    summary_tree(mymodel, input_size=(1, 8), level=n)
 
-    tt.module_summary()
-
-    y = tt.model_hooks.layer_info[0].infodict(
-        "name",
-        "class_name",
-        "depth",
-        "parent",
-        "children",
-        "input_shape",
-        "output_shape",
-        "is_leaf",
-        "trainable",
-        "total_params",
-        "trainable_params",
-        "non_trainable_params",
-    )
-    rprint(y)
+    # y = tt.model_hooks.layer_info[0].infodict(
+    #     "name",
+    #     "class_name",
+    #     "depth",
+    #     "parent",
+    #     "children",
+    #     "input_shape",
+    #     "output_shape",
+    #     "is_leaf",
+    #     "trainable",
+    #     "total_params",
+    #     "trainable_params",
+    #     "non_trainable_params",
+    # )
+    # rprint(y)
     # summary(
     #     mymodel,
-    #     (1, 3, 512, 512),
+    #     (1, 3, 224, 224),
     #     depth=n,
     #     col_names=[
     #         "input_size",

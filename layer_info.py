@@ -1,12 +1,6 @@
 import torch
 from torch import nn
 
-from rich.theme import Theme
-from rich.console import Console
-from rich.traceback import install
-
-install(show_locals=True, theme="monokai", word_wrap=True)
-
 
 class LayerInfo:
     def __init__(
@@ -34,6 +28,10 @@ class LayerInfo:
         return len(self.layer._modules) == 0
 
     @property
+    def parameters(self):
+        return [name for name in self.layer.named_parameters()]
+
+    @property
     def trainable(self):
         return any(p.requires_grad for p in self.layer.parameters())
 
@@ -55,9 +53,7 @@ class LayerInfo:
         info = {}
         for col_name in col_names:
             info[col_name] = getattr(self, col_name, None)
-        # x = sum(p.numel() for p in self.layer.parameters() if not p.requires_grad)
         return info
 
     def __repr__(self):
-        return f"{self.class_name}"
-        # return f"{self.class_name} : {self.layer}"
+        return f"{self.name}"

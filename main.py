@@ -5,42 +5,46 @@ from torchvision import models
 from rich.tree import Tree
 from rich import print as rprint
 from bigtree import dict_to_tree
-
+from functools import cached_property
 import timeit
 from hooks import ModelHooks
 from model_info import ModelInfo
+from torchtree import TorchTree
 
 
-class TorchTree:
-    """
-    A class to manage a tree structure of PyTorch modules.
-    """
+def summary_table(
+    model: nn.Module, input_data=None, input_size=None, level: int | tuple = None
+):
+    model_info = ModelInfo(model)
+    model_hooks = ModelHooks(model_info, level)
+    model_hooks.register_layer_hooks(model_hooks.layer_info_hook)
+    torchtree = TorchTree(model_hooks, level)
 
-    def __init__(
-        self,
-        model_hooks: ModelHooks,
-        level: int | tuple = None,
-    ):
-        self.model_hooks = model_hooks
+    dummy_inputs = torchtree.get_dummy_inputs(input_data, input_size)
+    torchtree.model(dummy_inputs)
+    model_hooks.remove_hooks()
+    # rprint(
+    #     model_hooks.layer_info[0].infodict(
+    #         "name",
+    #         "class_name",
+    #     )
+    # )
 
-    @property
-    def model(self):
-        return self.model_hooks.model
 
-    def get_dummy_inputs(self, input_data=None, input_size=None):
-        """
-        Returns a dummy input tensor based on the model's input shape.
-        Returns:
-            A dummy input tensor.
-        """
-        input_data_specified = (input_data is not None) or (input_size is not None)
-
-        if input_data_specified and input_size is not None:
-            return torch.randn(*input_size)
-        elif input_data_specified and input_data is not None:
-            return input_data
-        else:
-            raise ValueError("Input data or size must be defined in the model.")
+def summary_tree(
+    model: nn.Module, input_data=None, input_size=None, level: int | tuple = None
+):
+    model_info = ModelInfo(model, level)
+    root = model_info.model.__class__.__name__
+    tree_dict = {
+        f"{root}.{name}": layer_info.infodict("class_name")
+        for name, layer_info in model_info.included_layers_info.items()
+    }
+    tree = dict_to_tree(tree_dict, sep=".")
+    tree.show(attr_list=["class_name"], attr_bracket=("(", ")"))
+    # keyf = lambda text: text.split(".")[0]
+    # y1 = {i.name for i in model_hooks.layer_info}
+    # r = [list(items) for gr, items in groupby(sorted(y1), key=keyf)]
 
 
 if __name__ == "__main__":
@@ -91,6 +95,7 @@ if __name__ == "__main__":
     #         # x = self.fc3(x)
     #         # x = self.softmax(x)
     #         return x1, x2
+
     def main_func():
         class Block(nn.Module):
             def __init__(self, in_features, out_features):
@@ -103,33 +108,20 @@ if __name__ == "__main__":
             def forward(self, x):
                 return self.fc2(self.fc1(x))
 
-        # class NestedModel(nn.Module):
-        #     def __init__(self):
-        #         super().__init__()
-        #         self.block1 = Block(8, 16)
-        #         self.block2 = Block(16, 32)
-        #         self.nested_block = nn.Sequential(Block(32, 64), Block(64, 128))
-        #         self.final_conv = nn.Linear(128, 10)
-
-        #     def forward(self, x):
-        #         x = self.block1(x)
-        #         x = self.block2(x)
-        #         x = self.nested_block(x)
-        #         x = self.final_conv(x)
-        #         return x
-
         class NestedModel(nn.Module):
             def __init__(self):
                 super().__init__()
                 self.block1 = Block(3, 16)
                 self.block2 = Block(16, 32)
-                # self.nested_block1 = nn.Sequential(Block(32, 64), Block(64, 128))
-                # self.nested_block2 = nn.Sequential(Block(128, 256), Block(256, 512))
-                # self.nested_block = nn.Sequential(self.nested_block1, self.nested_block2)
+                self.nested_block1 = nn.Sequential(Block(32, 64), Block(64, 128))
+                self.nested_block2 = nn.Sequential(Block(128, 256), Block(256, 512))
                 self.nested_block = nn.Sequential(
-                    nn.Sequential(Block(32, 64), Block(64, 128)),
-                    nn.Sequential(Block(128, 256), Block(256, 512)),
+                    self.nested_block1, self.nested_block2
                 )
+                # self.nested_block = nn.Sequential(
+                #     nn.Sequential(Block(32, 64), Block(64, 128)),
+                #     nn.Sequential(Block(128, 256), Block(256, 512)),
+                # )
                 # self.final_conv = nn.Conv2d(512, 10, kernel_size=1)
 
             def forward(self, x):
@@ -139,32 +131,17 @@ if __name__ == "__main__":
                 # x = self.final_conv(x)
                 return x
 
-        # mymodel = NestedModel()
-        mymodel = models.vgg19(weights=models.VGG19_Weights.DEFAULT)
-        # mymodel = models.resnet50(weights=models.ResNet50_Weights.IMAGENET1K_V1)
+        mymodel = NestedModel()
+        # mymodel = models.vgg19(weights=models.VGG19_Weights.DEFAULT)
+        mymodel = models.resnet50(weights=models.ResNet50_Weights.IMAGENET1K_V1)
         # mymodel = ImageMulticlassClassificationNet()
-        n = 0
+        n = 4
         # summary_table(mymodel, input_size=(1, 3, 512, 512), level=n)
-        summary_tree(mymodel, input_size=(1, 3), level=n)
+        summary_tree(mymodel, input_size=(1, 3, 512, 512), level=n)
 
-        # y = tt.model_hooks.layer_info[0].infodict(
-        #     "name",
-        #     "class_name",
-        #     "depth",
-        #     "parent",
-        #     "children",
-        #     "input_shape",
-        #     "output_shape",
-        #     "is_leaf",
-        #     "trainable",
-        #     "total_params",
-        #     "trainable_params",
-        #     "non_trainable_params",
-        # )
-        # rprint(y)
         # summary(
         #     mymodel,
-        #     (1, 3),
+        #     (1, 3, 224, 224),
         #     depth=n,
         #     col_names=[
         #         "input_size",
@@ -175,5 +152,5 @@ if __name__ == "__main__":
         #     row_settings=["var_names", "depth"],
         # )
 
-    duration = timeit.timeit(main_func, number=100)
+    duration = timeit.timeit(main_func, number=1)
     print(duration)

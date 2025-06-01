@@ -2,26 +2,72 @@ import torch
 from torch import nn
 
 
+class LayerName:
+    def __init__(self, root):
+        self.root_name = root.__class__.__name__
+
+    def full_name(self, name):
+        if self.is_full_name(name):
+            return name
+        else:
+            delemeter = "" if name.startswith(".") else "."
+            return f"{self.root_name}{delemeter}{name}"
+
+    def original_name(self, name):
+        if self.is_full_name(name):
+            x = name.split(".", maxsplit=1)
+            original_name = x[-1] if len(x) == 2 else self.root_name
+            return original_name
+        else:
+            return name
+
+    def is_root(self, name):
+        return name == self.root_name
+
+    def is_full_name(self, name):
+        return name.startswith(".") or name.startswith(self.root_name)
+
+    def depth(self, name):
+        n = 1 if self.is_full_name(name) else 0
+        return len(name.split(".")) - n
+
+    def parent(self, name):
+        x = name.rsplit(".", maxsplit=1)
+        parent = x[0] if len(x) == 2 else self.root_name
+        return parent
+
+    def basename(self, name):
+        x = name.rsplit(".", maxsplit=1)
+        if self.is_full_name(name):
+            basename = x[-1] if len(x) == 2 else self.root_name
+        else:
+            basename = x[-1]
+
+        return basename
+
+
 class LayerInfo:
     def __init__(
         self,
-        name,
-        layer,
-        depth,
-        parent,
-        children,
-        class_name,
-        input_shape,
-        output_shape,
+        name=None,
+        layer=None,
+        children=None,
+        input_shape=None,
+        output_shape=None,
+        root=None,
     ):
-        self.name = name
         self.layer = layer
-        self.depth = depth
-        self.parent = parent
         self.children = children
-        self.class_name = class_name
         self.input_shape = input_shape
-        self.output_shape = tuple(output_shape)
+        self.output_shape = output_shape
+        self.class_name = layer.__class__.__name__
+
+        self.ln = LayerName(root)
+        self.depth = self.ln.depth(name)
+        self.parent = self.ln.parent(name)
+        self.basename = self.ln.basename(name)
+        self.full_name = self.ln.full_name(name)
+        self.original_name = self.ln.original_name(name)
 
     @property
     def is_leaf(self):
@@ -52,8 +98,10 @@ class LayerInfo:
     def infodict(self, *col_names):
         info = {}
         for col_name in col_names:
-            info[col_name] = getattr(self, col_name, None)
+            is_tr = "*" if self.trainable else ""
+            info[col_name] = getattr(self, col_name, None) + is_tr
         return info
 
     def __repr__(self):
-        return f"{self.name}"
+        r = f"{self.original_name}---{self.full_name}---{self.basename}---{self.depth}---{self.parent}---{list(self.children.keys())}---{self.class_name}\n"
+        return r

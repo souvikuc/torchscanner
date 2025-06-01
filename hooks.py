@@ -8,14 +8,15 @@ from rich import print as rprint
 
 from layer_info import LayerInfo
 from model_info import ModelInfo
+from utils import rgetattr
 
 
-# Magic function to get torch model layers by name using dot notations
-def rgetattr(obj, attr, *args):
-    def _getattr(obj, attr):
-        return getattr(obj, attr, *args)
+# # Magic function to get torch model layers by name using dot notations
+# def rgetattr(obj, attr, *args):
+#     def _getattr(obj, attr):
+#         return getattr(obj, attr, *args)
 
-    return reduce(_getattr, [obj] + attr.split("."))
+#     return reduce(_getattr, [obj] + attr.split("."))
 
 
 def add_dynamic_method(self):
@@ -124,10 +125,6 @@ class ModelHooks:
                 partial(hook_fn, name=layer, children=gchildren)
             )
             self.hooks.append(handle)
-
-    def run(self, input_size):
-        dummy_input = torch.randn(*input_size)
-        self.model(dummy_input)
 
     def remove_hooks(self):
         """

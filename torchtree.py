@@ -19,7 +19,6 @@ class TorchTree:
     def __init__(
         self,
         model_hooks: ModelHooks,
-        level: int | tuple = None,
     ):
         self.model_hooks = model_hooks
 

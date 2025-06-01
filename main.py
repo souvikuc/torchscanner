@@ -15,13 +15,14 @@ from torchtree import TorchTree
 def summary_table(
     model: nn.Module, input_data=None, input_size=None, level: int | tuple = None
 ):
-    model_info = ModelInfo(model)
-    model_hooks = ModelHooks(model_info, level)
+    model_info = ModelInfo(model, level)
+    model_hooks = ModelHooks(model_info)
     model_hooks.register_layer_hooks(model_hooks.layer_info_hook)
-    torchtree = TorchTree(model_hooks, level)
+    # torchtree = TorchTree(model_hooks)
 
-    dummy_inputs = torchtree.get_dummy_inputs(input_data, input_size)
-    torchtree.model(dummy_inputs)
+    # dummy_inputs = torchtree.get_dummy_inputs(input_data, input_size)
+    # torchtree.model(dummy_inputs)
+    model_hooks.run((1, 3))
     model_hooks.remove_hooks()
     # rprint(
     #     model_hooks.layer_info[0].infodict(
@@ -133,11 +134,11 @@ if __name__ == "__main__":
 
         mymodel = NestedModel()
         # mymodel = models.vgg19(weights=models.VGG19_Weights.DEFAULT)
-        mymodel = models.resnet50(weights=models.ResNet50_Weights.IMAGENET1K_V1)
+        # mymodel = models.resnet50(weights=models.ResNet50_Weights.IMAGENET1K_V1)
         # mymodel = ImageMulticlassClassificationNet()
         n = 4
-        # summary_table(mymodel, input_size=(1, 3, 512, 512), level=n)
-        summary_tree(mymodel, input_size=(1, 3, 512, 512), level=n)
+        summary_table(mymodel, input_size=(1, 3), level=n)
+        # summary_tree(mymodel, input_size=(1, 3, 512, 512), level=n)
 
         # summary(
         #     mymodel,

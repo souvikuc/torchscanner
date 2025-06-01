@@ -75,7 +75,7 @@ class LayerInfo:
 
     @property
     def parameters(self):
-        return [name for name in self.layer.named_parameters()]
+        return [name for name, param in self.layer.named_parameters()]
 
     @property
     def trainable(self):
@@ -95,11 +95,24 @@ class LayerInfo:
         # x = sum(p.numel() for p in self.layer.parameters() if not p.requires_grad)
         return x
 
-    def infodict(self, *col_names):
+    @property
+    def infodict(self):
         info = {}
-        for col_name in col_names:
-            is_tr = "*" if self.trainable else ""
-            info[col_name] = getattr(self, col_name, None) + is_tr
+        info["basename"] = self.basename
+        info["full_name"] = self.full_name
+        info["original_name"] = self.original_name
+        info["parent"] = self.parent
+        info["depth"] = self.depth
+        info["input_shape"] = self.input_shape
+        info["output_shape"] = self.output_shape
+        info["children"] = self.children.keys()
+        info["class_name"] = self.class_name
+        info["is_leaf"] = self.is_leaf
+        info["parameters"] = self.parameters
+        info["trainable"] = self.trainable
+        info["total_params"] = self.total_params
+        info["trainable_params"] = self.trainable_params
+        info["non_trainable_params"] = self.non_trainable_params
         return info
 
     def __repr__(self):

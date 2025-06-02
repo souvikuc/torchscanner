@@ -30,11 +30,11 @@ class ModelInfo:
     def trainable(self):
         return any(p.requires_grad for p in self.model.parameters())
 
-    @cached_property
+    @property
     def parameters(self):
         return [name for name in self.model.named_parameters()]
 
-    @cached_property
+    @property
     def total_params(self) -> int:
         """
         Returns the total number of parameters in the model.
@@ -43,11 +43,11 @@ class ModelInfo:
         """
         return sum(p.numel() for p in self.model.parameters())
 
-    @cached_property
+    @property
     def trainable_params(self):
         return sum(p.numel() for p in self.model.parameters() if p.requires_grad)
 
-    @cached_property
+    @property
     def non_trainable_params(self):
         x = self.total_params - self.trainable_params
         # x = sum(p.numel() for p in self.model.parameters() if not p.requires_grad)
@@ -209,16 +209,6 @@ class ModelInfo:
             The depth of the model.
         """
         return self.__get_model_depth(self.model)
-
-    # def get_children(self, level: tuple = None) -> list:
-    #     if level[0] == level[1]:
-    #         _child_func = lambda x: len(x.split(".")) == level[0] + 1
-    #     else:
-    #         mini, maxi = min(level), max(level)
-    #         _child_func = lambda x: (len(x.split(".")) >= mini + 1) and (
-    #             len(x.split(".")) <= maxi + 1
-    #         )
-    #     return list(filter(_child_func, self.module_list))
 
 
 if __name__ == "__main__":

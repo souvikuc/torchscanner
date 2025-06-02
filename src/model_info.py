@@ -210,15 +210,15 @@ class ModelInfo:
         """
         return self.__get_model_depth(self.model)
 
-    def get_children(self, level: tuple = None) -> list:
-        if level[0] == level[1]:
-            _child_func = lambda x: len(x.split(".")) == level[0] + 1
-        else:
-            mini, maxi = min(level), max(level)
-            _child_func = lambda x: (len(x.split(".")) >= mini + 1) and (
-                len(x.split(".")) <= maxi + 1
-            )
-        return list(filter(_child_func, self.module_list))
+    # def get_children(self, level: tuple = None) -> list:
+    #     if level[0] == level[1]:
+    #         _child_func = lambda x: len(x.split(".")) == level[0] + 1
+    #     else:
+    #         mini, maxi = min(level), max(level)
+    #         _child_func = lambda x: (len(x.split(".")) >= mini + 1) and (
+    #             len(x.split(".")) <= maxi + 1
+    #         )
+    #     return list(filter(_child_func, self.module_list))
 
 
 if __name__ == "__main__":

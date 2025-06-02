@@ -10,6 +10,7 @@ import timeit
 
 from src.hooks import ModelHooks
 from src.model_info import ModelInfo
+from src.enums import LayerInfoSettings
 
 
 def summary_table(
@@ -30,14 +31,19 @@ def summary_tree(
     model: nn.Module, input_data=None, input_size=None, level: int | tuple = None
 ):
     model_info = ModelInfo(model, level)
-    root = model_info.model.__class__.__name__
+    root = model_info.ln.root_name
     tree_dict = {}
     for name, layer_info in model_info.included_layers_info.items():
         full_name = model_info.ln.full_name(name)
-        is_tr = " *" if layer_info.infodict["trainable"] else ""
-        tree_dict[full_name] = {"class_name": layer_info.infodict["class_name"] + is_tr}
+        is_tr = " *" if layer_info.infodict[LayerInfoSettings.TRAINABLE] else ""
+        tree_dict[full_name] = {
+            LayerInfoSettings.CLASSNAME.value: layer_info.infodict[
+                LayerInfoSettings.CLASSNAME
+            ]
+            + is_tr
+        }
     tree = dict_to_tree(tree_dict, sep=".")
-    tree.show(attr_list=["class_name"], attr_bracket=("(", ")"))
+    tree.show(attr_list=[LayerInfoSettings.CLASSNAME.value], attr_bracket=("(", ")"))
 
 
 if __name__ == "__main__":

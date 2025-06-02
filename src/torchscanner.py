@@ -7,8 +7,8 @@ from rich import print as rprint
 from bigtree import dict_to_tree
 
 import timeit
-from hooks import ModelHooks
-from model_info import ModelInfo
+from src.hooks import ModelHooks
+from src.model_info import ModelInfo
 
 
 class TorchTree:

@@ -9,16 +9,19 @@ from collections import OrderedDict
 from functools import cached_property
 from itertools import accumulate, chain
 
-from utils import rgetattr
-from layer_info import LayerInfo, LayerName
+from src.utils import rgetattr
+from src.layer_info import LayerInfo, LayerName
 
 
+# =======================================================================================
+# class to extract and contain all possible information about a module (in pytorch)
+# =======================================================================================
 class ModelInfo:
     """
     A class to manage model information for PyTorch modules.
     """
 
-    def __init__(self, model: nn.Module, level: int = 0):
+    def __init__(self, model: nn.Module, level: int | tuple = 1):
         self.model = model
         self.level = level
         self.ln = LayerName(root=self.model)
@@ -108,13 +111,7 @@ class ModelInfo:
     def __construct_info(self, leaf_tuple: tuple) -> tuple:
         name, leaf = leaf_tuple
         children = self.__get_children(name)
-
-        leaf_info = LayerInfo(
-            name=name,
-            layer=leaf,
-            children=children,
-            root=self.model,
-        )
+        leaf_info = LayerInfo(name=name, layer=leaf, children=children, root=self.model)
         return self.ln.original_name(name), leaf_info
 
     def __get_children(self, name: str) -> OrderedDict:

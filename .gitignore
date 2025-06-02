@@ -175,6 +175,7 @@ cython_debug/
 
 
 #custom
+.DS_Store
 *_old.py
 *_temp.py
 tempCodeRunnerFile.py

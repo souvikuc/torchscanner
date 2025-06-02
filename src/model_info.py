@@ -89,7 +89,7 @@ class ModelInfo:
     def __remove_lower_duplicated_leaves(self, leaves: OrderedDict) -> OrderedDict:
         unique_leaves = OrderedDict()
         d_leaves = self.__get_duplicated_leaves(leaves)
-        # rprint(d_leaves)
+
         _filter_func = lambda x: len(x.split("."))
         for id_value, names in d_leaves.items():
             top_level_name = max(names, key=_filter_func)
@@ -140,8 +140,7 @@ class ModelInfo:
             layer = ctypes.cast(unique_leaves.pop(key), ctypes.py_object).value
             name = self.ln.original_name(key)
             unique_leaves[name] = layer
-        # rprint(unique_leaves)
-        # print("\n\n")
+
         return unique_leaves
 
     @cached_property
@@ -152,14 +151,12 @@ class ModelInfo:
         for key in list(non_leaves.keys()):
             name = self.ln.original_name(key)
             non_leaves[name] = rgetattr(self.model, name)
-        # rprint(non_leaves)
-        # print("\n\n")
+
         return non_leaves
 
     @property
     def descendants(self):
-        # rprint(OrderedDict({**self.leaves, **self.non_leaves}))
-        # print("\n\n")
+
         return OrderedDict({**self.leaves, **self.non_leaves})
 
     @property
@@ -211,10 +208,6 @@ class ModelInfo:
         Returns:
             The depth of the model.
         """
-        # modules_splitted = map(lambda x: x.split("."), self.module_list)
-        # modules_depth_index = map(len, modules_splitted)
-        # return max(modules_depth_index) - 1
-
         return self.__get_model_depth(self.model)
 
     def get_children(self, level: tuple = None) -> list:

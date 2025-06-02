@@ -1,8 +1,14 @@
 import torch
 from torch import nn
 
+from enums import LayerInfoSettings
 
+
+# =======================================================================================
+# class to manipulate layer names in dot notation (like pytorch)
+# =======================================================================================
 class LayerName:
+
     def __init__(self, root):
         self.root_name = root.__class__.__name__
 
@@ -44,6 +50,22 @@ class LayerName:
             basename = x[-1]
 
         return basename
+
+
+# =======================================================================================
+# class to contain all possible information about a layer/module (in pytorch)
+# =======================================================================================
+
+# info_fields = {
+#     LayerInfoSettings.KERNEL_SIZE: "Kernel Shape",
+#     LayerInfoSettings.GROUPS: "Groups",
+#     LayerInfoSettings.INPUT_SIZE: "Input Shape",
+#     LayerInfoSettings.OUTPUT_SIZE: "Output Shape",
+#     LayerInfoSettings.NUM_PARAMS: "Param #",
+#     LayerInfoSettings.PARAMS_PERCENT: "Param %",
+#     LayerInfoSettings.MULT_ADDS: "Mult-Adds",
+#     LayerInfoSettings.TRAINABLE: "Trainable",
+# }
 
 
 class LayerInfo:

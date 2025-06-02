@@ -9,7 +9,6 @@ from functools import cached_property
 import timeit
 from hooks import ModelHooks
 from model_info import ModelInfo
-from torchtree import TorchTree
 
 
 def summary_table(
@@ -24,12 +23,6 @@ def summary_table(
     # torchtree.model(dummy_inputs)
     model_hooks.run((1, 3))
     model_hooks.remove_hooks()
-    # rprint(
-    #     model_hooks.layer_info[0].infodict(
-    #         "name",
-    #         "class_name",
-    #     )
-    # )
 
 
 def summary_tree(
@@ -37,15 +30,13 @@ def summary_tree(
 ):
     model_info = ModelInfo(model, level)
     root = model_info.model.__class__.__name__
-    tree_dict = {
-        f"{root}.{name}": layer_info.infodict("class_name")
-        for name, layer_info in model_info.included_layers_info.items()
-    }
+    tree_dict = {}
+    for name, layer_info in model_info.included_layers_info.items():
+        full_name = model_info.ln.full_name(name)
+        is_tr = " *" if layer_info.infodict["trainable"] else ""
+        tree_dict[full_name] = {"class_name": layer_info.infodict["class_name"] + is_tr}
     tree = dict_to_tree(tree_dict, sep=".")
     tree.show(attr_list=["class_name"], attr_bracket=("(", ")"))
-    # keyf = lambda text: text.split(".")[0]
-    # y1 = {i.name for i in model_hooks.layer_info}
-    # r = [list(items) for gr, items in groupby(sorted(y1), key=keyf)]
 
 
 if __name__ == "__main__":
@@ -138,7 +129,7 @@ if __name__ == "__main__":
         # mymodel = ImageMulticlassClassificationNet()
         n = 4
         summary_table(mymodel, input_size=(1, 3), level=n)
-        # summary_tree(mymodel, input_size=(1, 3, 512, 512), level=n)
+        summary_tree(mymodel, input_size=(1, 3), level=n)
 
         # summary(
         #     mymodel,

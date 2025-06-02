@@ -1,29 +1,16 @@
-import torch, re
 import timeit
+import torch, re
 from torch import nn
 from functools import wraps
-from functools import partial, reduce
 from torchinfo import summary
+from functools import partial
 from torchvision import models
 
 from rich import print as rprint
 
-from layer_info import LayerInfo, LayerName
-from model_info import ModelInfo
 from utils import rgetattr
-
-
-def add_dynamic_method(self):
-    def decorator(func):
-        @wraps(func)
-        def wrapper(*args, **kwargs):  # def wrapper(self, *args, **kwargs):
-            return func(*args, **kwargs)
-
-        setattr(self, func.__name__, wrapper)
-        # Note we are not binding func, but wrapper which accepts self but does exactly the same as func
-        return func  # returning func means func can still be used normally
-
-    return decorator
+from model_info import ModelInfo
+from layer_info import LayerInfo, LayerName
 
 
 info_fields = [
@@ -41,15 +28,16 @@ info_fields = [
 ]  # Add more fields as needed
 
 
+# =======================================================================================
+# class to create and attach and remove hooks to a set of layers/modules (in pytorch)
+# =======================================================================================
 class ModelHooks:
     """
     A class to manage hooks for PyTorch modules.
     """
 
     def __init__(self, model_info: ModelInfo):
-        # def __init__(self, model_info: ModelInfo, level: int | tuple = None):
         self.model_info = model_info
-
         self.hooks = []
         self.layer_info = []
 

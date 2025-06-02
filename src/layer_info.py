@@ -56,17 +56,6 @@ class LayerName:
 # class to contain all possible information about a layer/module (in pytorch)
 # =======================================================================================
 
-# info_fields = {
-#     LayerInfoSettings.KERNEL_SIZE: "Kernel Shape",
-#     LayerInfoSettings.GROUPS: "Groups",
-#     LayerInfoSettings.INPUT_SIZE: "Input Shape",
-#     LayerInfoSettings.OUTPUT_SIZE: "Output Shape",
-#     LayerInfoSettings.NUM_PARAMS: "Param #",
-#     LayerInfoSettings.PARAMS_PERCENT: "Param %",
-#     LayerInfoSettings.MULT_ADDS: "Mult-Adds",
-#     LayerInfoSettings.TRAINABLE: "Trainable",
-# }
-
 
 class LayerInfo:
     def __init__(
@@ -78,6 +67,7 @@ class LayerInfo:
         output_shape=None,
         root=None,
     ):
+        self.info_dict = {}
         self.layer = layer
         self.children = children
         self.input_shape = input_shape
@@ -119,23 +109,25 @@ class LayerInfo:
 
     @property
     def infodict(self):
-        info = {}
-        info["basename"] = self.basename
-        info["full_name"] = self.full_name
-        info["original_name"] = self.original_name
-        info["parent"] = self.parent
-        info["depth"] = self.depth
-        info["input_shape"] = self.input_shape
-        info["output_shape"] = self.output_shape
-        info["children"] = self.children.keys()
-        info["class_name"] = self.class_name
-        info["is_leaf"] = self.is_leaf
-        info["parameters"] = self.parameters
-        info["trainable"] = self.trainable
-        info["total_params"] = self.total_params
-        info["trainable_params"] = self.trainable_params
-        info["non_trainable_params"] = self.non_trainable_params
-        return info
+        # info_dict = {}
+        self.info_dict[LayerInfoSettings.DEPTH] = self.depth
+        self.info_dict[LayerInfoSettings.PARENT] = self.parent
+        self.info_dict[LayerInfoSettings.ISLEAF] = self.is_leaf
+        self.info_dict[LayerInfoSettings.PARAMS] = self.parameters
+        self.info_dict[LayerInfoSettings.BASENAME] = self.basename
+        self.info_dict[LayerInfoSettings.FULLNAME] = self.full_name
+        self.info_dict[LayerInfoSettings.TRAINABLE] = self.trainable
+        self.info_dict[LayerInfoSettings.CLASSNAME] = self.class_name
+        self.info_dict[LayerInfoSettings.INPUT_SIZE] = self.input_shape
+        self.info_dict[LayerInfoSettings.NUM_PARAMS] = self.total_params
+        self.info_dict[LayerInfoSettings.CHILDREN] = self.children.keys()
+        self.info_dict[LayerInfoSettings.OUTPUT_SIZE] = self.output_shape
+        self.info_dict[LayerInfoSettings.ORIGINALNAME] = self.original_name
+        self.info_dict[LayerInfoSettings.TRAINABLE_PARAMS] = self.trainable_params
+        self.info_dict[LayerInfoSettings.NON_TRAINABLE_PARAMS] = (
+            self.non_trainable_params
+        )
+        return self.info_dict
 
     def __repr__(self):
         r = f"{self.original_name}---{self.full_name}---{self.basename}---{self.depth}---{self.parent}---{list(self.children.keys())}---{self.class_name}\n"

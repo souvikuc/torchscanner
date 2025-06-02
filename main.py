@@ -7,8 +7,9 @@ from rich import print as rprint
 from bigtree import dict_to_tree
 from functools import cached_property
 import timeit
-from hooks import ModelHooks
-from model_info import ModelInfo
+
+from src.hooks import ModelHooks
+from src.model_info import ModelInfo
 
 
 def summary_table(
@@ -105,15 +106,15 @@ if __name__ == "__main__":
                 super().__init__()
                 self.block1 = Block(3, 16)
                 self.block2 = Block(16, 32)
-                self.nested_block1 = nn.Sequential(Block(32, 64), Block(64, 128))
-                self.nested_block2 = nn.Sequential(Block(128, 256), Block(256, 512))
-                self.nested_block = nn.Sequential(
-                    self.nested_block1, self.nested_block2
-                )
+                # self.nested_block1 = nn.Sequential(Block(32, 64), Block(64, 128))
+                # self.nested_block2 = nn.Sequential(Block(128, 256), Block(256, 512))
                 # self.nested_block = nn.Sequential(
-                #     nn.Sequential(Block(32, 64), Block(64, 128)),
-                #     nn.Sequential(Block(128, 256), Block(256, 512)),
+                #     self.nested_block1, self.nested_block2
                 # )
+                self.nested_block = nn.Sequential(
+                    nn.Sequential(Block(32, 64), Block(64, 128)),
+                    nn.Sequential(Block(128, 256), Block(256, 512)),
+                )
                 # self.final_conv = nn.Conv2d(512, 10, kernel_size=1)
 
             def forward(self, x):

@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 
-from enums import LayerInfoSettings
+from src.enums import LayerInfoSettings
 
 
 # =======================================================================================

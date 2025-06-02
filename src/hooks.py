@@ -8,9 +8,9 @@ from torchvision import models
 
 from rich import print as rprint
 
-from utils import rgetattr
-from model_info import ModelInfo
-from layer_info import LayerInfo, LayerName
+from src.utils import rgetattr
+from src.model_info import ModelInfo
+from src.layer_info import LayerInfo, LayerName
 
 
 info_fields = [

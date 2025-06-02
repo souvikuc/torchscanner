@@ -1,8 +1,8 @@
-from enum import Enum, IntEnum, unique
+from enum import Enum, StrEnum, unique
 
 
 @unique
-class LayerInfoSettings(str, Enum):
+class LayerInfoSettings(StrEnum):
     """Enum containing all available column settings."""
 
     __slots__ = ()

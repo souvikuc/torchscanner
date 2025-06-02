@@ -9,8 +9,8 @@ from collections import OrderedDict
 from functools import cached_property
 from itertools import accumulate, chain
 
-from utils import rgetattr
-from layer_info import LayerInfo, LayerName
+from src.utils import rgetattr
+from src.layer_info import LayerInfo, LayerName
 
 
 # =======================================================================================

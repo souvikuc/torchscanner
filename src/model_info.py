@@ -21,7 +21,12 @@ class ModelInfo:
     A class to manage model information for PyTorch modules.
     """
 
-    def __init__(self, model: nn.Module, level: int | tuple = 1):
+    def __init__(
+        self,
+        model: nn.Module,
+        level: int | tuple = 1,
+        columns: list = None,
+    ):
         self.model = model
         self.level = level
         self.ln = LayerName(root=self.model)
@@ -213,115 +218,15 @@ class ModelInfo:
 
 if __name__ == "__main__":
 
-    # class ImageMulticlassClassificationNet(nn.Module):
-    #     def __init__(self) -> None:
-    #         super().__init__()
-    #         self.conv1 = nn.Conv2d(1, 6, 3)
-    #         self.pool = nn.MaxPool2d(2, 2)
-    #         self.conv2 = nn.Conv2d(6, 16, 3)
-    #         self.flatten = nn.Flatten()
-    #         # self.fc1 = nn.Linear(16 * 11 * 11, 128)  # out: (BS, 128)
-    #         # self.fc2 = nn.Linear(128, 64)
-    #         # self.fc3 = nn.Linear(64, NUM_CLASSES)
-    #         self.relu = nn.ReLU()
-    #         # self.softmax = nn.LogSoftmax()
-    #         self.class_head1 = nn.Sequential(
-    #             nn.Linear(16 * 11 * 11, 128),
-    #             nn.ReLU(),
-    #             nn.Linear(128, 64),
-    #             nn.ReLU(),
-    #             nn.Linear(64, 5),
-    #             nn.Softmax(dim=-1),
-    #         )
-    #         self.class_head2 = nn.Sequential(
-    #             nn.Linear(16 * 11 * 11, 128),
-    #             nn.ReLU(),
-    #             nn.Linear(128, 64),
-    #             nn.ReLU(),
-    #             nn.Linear(64, 5),
-    #             nn.Softmax(dim=-1),
-    #         )
-
-    #     def forward(self, x):
-    #         x = self.conv1(x)  # out: (BS, 6, 48, 48)
-    #         x = self.relu(x)
-    #         x = self.pool(x)  # out: (BS, 6, 24, 24)
-    #         x = self.conv2(x)  # out: (BS, 16, 22, 22)
-    #         x = self.relu(x)
-    #         x = self.pool(x)  # out: (BS, 16, 11, 11)
-    #         x = self.flatten(x)
-    #         x1 = self.class_head1(x)  # out: (BS, NUM_CLASSES)
-    #         x2 = self.class_head2(x)  # out: (BS, NUM_CLASSES)
-    #         # x = self.fc1(x)
-    #         # x = self.relu(x)
-    #         # x = self.fc2(x)
-    #         # x = self.relu(x)
-    #         # x = self.fc3(x)
-    #         # x = self.softmax(x)
-    #         return x1, x2
-
-    # mymodel = ImageMulticlassClassificationNet()
-
-    # mymodel = models.vgg19(weights=True)
     def main_func():
-        class Block(nn.Module):
-            def __init__(self, in_features, out_features):
-                super().__init__()
-                self.fc1 = nn.Linear(in_features, 10)
-                # self.fc2 = nn.Linear(10, 20)
-                self.fc2 = nn.Linear(10, out_features)
-                # self.relu = nn.ReLU()
 
-            def forward(self, x):
-                return self.fc2(self.fc1(x))
-
-        class NestedModel(nn.Module):
-            def __init__(self):
-                super().__init__()
-                self.block1 = Block(3, 16)
-                self.block2 = Block(16, 32)
-                self.nested_block1 = nn.Sequential(Block(32, 64), Block(64, 128))
-                self.nested_block2 = nn.Sequential(Block(128, 256), Block(256, 512))
-                self.nested_block = nn.Sequential(
-                    self.nested_block1, self.nested_block2
-                )
-                # self.nested_block = nn.Sequential(
-                #     nn.Sequential(Block(32, 64), Block(64, 128)),
-                #     nn.Sequential(Block(128, 256), Block(256, 512)),
-                # )
-
-            def forward(self, x):
-                x = self.block1(x)
-                x = self.block2(x)
-                x = self.nested_block(x)
-                # x = self.final_conv(x)
-                return x
-
-        # model = Block(3, 16)
         model = NestedModel()
-        # model = models.vgg19(weights=models.VGG19_Weights.DEFAULT)
-        # rprint(model)
+
         n = 4
         mi = ModelInfo(model, n)
-        # rprint(mi.included_layers_info)
-        # print("tytytyty", model == mi.included_layers["NestedModel"])
 
-        # rprint(mi.leaves)
-        # print("xxxxx\n\n\n\n")
-        # rprint(mi.leaves_info)
-        # print("yyyyy\n\n\n\n")
-        # rprint(mi.non_leaves)
-        # print("zzzzz\n\n\n\n")
-        # rprint(mi.non_leaves_info)
-        # print("aaaaa\n\n\n\n")
-        # rprint(mi.descendants)
-        # print("bbbbb\n\n\n\n")
-        # rprint(mi.descendants_info)
-        # print("ccccc\n\n\n\n")
         rprint(mi.included_layers)
 
-        print("ererere\n\n\n\n")
-        rprint(mi.included_layers_info)
         # summary(
         #     model,
         #     (1, 3, 224, 224),

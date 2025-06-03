@@ -10,7 +10,7 @@ class LayerInfoSettings(StrEnum):
     DEPTH = "depth"
     PARENT = "parent"
     ISLEAF = "is_leaf"
-    CHILDREN = "groups"
+    CHILDREN = "children"
     BASENAME = "basename"
     PARAMS = "parameters"
     FULLNAME = "full_name"

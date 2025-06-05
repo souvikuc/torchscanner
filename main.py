@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 
-# from torchinfo import summary
+from torchinfo import summary
 from torchvision import models
 from rich.tree import Tree
 from rich import print as rprint
@@ -9,7 +9,7 @@ from bigtree import dict_to_tree
 from functools import cached_property
 import timeit
 
-from src.hooks import ModelHooks
+from src.hooks import ModelHookSettings
 from src.model_info import ModelInfo
 from src.enums import LayerInfoSettings
 
@@ -21,10 +21,11 @@ def summary_table(
     input_data=None,
     input_size=None,
     level: int | tuple = None,
-    columns: list = None,
+    # columns: list = None,
 ):
-    model_info = ModelInfo(model, level, columns)
-    model_hooks = ModelHooks(model_info)
+    model_info = ModelInfo(model, level)
+    # model_info = ModelInfo(model, level, columns)
+    model_hooks = ModelHookSettings(model_info)
     model_hooks.register_layer_hooks(model_hooks.layer_info_hook)
     # torchtree = TorchTree(model_hooks)
 
@@ -37,7 +38,11 @@ def summary_table(
 def summary_tree(
     model: nn.Module, input_data=None, input_size=None, level: int | tuple = None
 ):
-    model_info = ModelInfo(model, level, columns=None)
+    model_info = ModelInfo(model, level)
+    rprint(model_info.leaves)
+    rprint(model_info.non_leaves)
+    # rprint(model_info.descendants.keys())
+    # model_info = ModelInfo(model, level, columns=None)
     root = model_info.ln.root_name
     tree_dict = {}
     for name, layer_info in model_info.included_layers_info.items():
@@ -59,12 +64,13 @@ if __name__ == "__main__":
 
         mymodel = Model_1()
         n = 4
-        summary_table(mymodel, input_size=(1, 3), level=n, columns=None)
+        # summary_table(mymodel, input_size=(1, 3), level=n)
+        # # summary_table(mymodel, input_size=(1, 3), level=n, columns=None)
         summary_tree(mymodel, input_size=(1, 3), level=n)
 
-        # summary(
+        # s = summary(
         #     mymodel,
-        #     (1, 3, 224, 224),
+        #     (1, 3),
         #     depth=n,
         #     col_names=[
         #         "input_size",

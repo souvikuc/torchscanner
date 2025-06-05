@@ -1,0 +1,7 @@
+DEFAULT_INFO:
+  - name
+  - class
+  - trainable
+  - input_shape
+  - output_shape
+

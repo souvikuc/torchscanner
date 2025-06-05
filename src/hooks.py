@@ -31,7 +31,7 @@ info_fields = [
 # =======================================================================================
 # class to create and attach and remove hooks to a set of layers/modules (in pytorch)
 # =======================================================================================
-class ModelHooks:
+class ModelHookSettings:
     """
     A class to manage hooks for PyTorch modules.
     """
@@ -113,7 +113,7 @@ if __name__ == "__main__":
         model = NestedModel()
         n = 2
         mi = ModelInfo(model, n)
-        mh = ModelHooks(mi)
+        mh = ModelHookSettings(mi)
 
         mh.register_layer_hooks(mh.layer_info_hook)
         mh.run((1, 3, 224, 224))

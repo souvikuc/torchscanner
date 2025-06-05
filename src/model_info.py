@@ -11,6 +11,7 @@ from itertools import accumulate, chain
 
 from src.utils import rgetattr
 from src.layer_info import LayerInfo, LayerName
+from sample_models_test import *
 
 
 # =======================================================================================
@@ -91,7 +92,7 @@ class ModelInfo:
                 flipped[id_value].append(name)
         return flipped
 
-    def __remove_lower_duplicated_leaves(self, leaves: OrderedDict) -> OrderedDict:
+    def __remove_duplicated_leaves(self, leaves: OrderedDict) -> OrderedDict:
         unique_leaves = OrderedDict()
         d_leaves = self.__get_duplicated_leaves(leaves)
 
@@ -102,9 +103,8 @@ class ModelInfo:
         return unique_leaves
 
     def __get_leaves(
-        self, model: nn.Module, root: str = "", result: dict = {}
+        self, model: nn.Module, root: str = "", result: OrderedDict = OrderedDict()
     ) -> OrderedDict:
-
         for name, module in model._modules.items():
             if not module._modules:
                 result[f"{root}.{name}"] = id(module)
@@ -138,22 +138,26 @@ class ModelInfo:
     @cached_property
     def leaves(self):
         leaves = self.__get_leaves(self.model)
-        unique_leaves = self.__remove_lower_duplicated_leaves(leaves)
-
+        unique_leaves = self.__remove_duplicated_leaves(leaves)
+        # rprint(unique_leaves)
+        print()
         # Iterate over a copy of keys by using list() to avoid issues
         for key in list(unique_leaves.keys()):
             layer = ctypes.cast(unique_leaves.pop(key), ctypes.py_object).value
             name = self.ln.original_name(key)
+            # unique_leaves[name] = unique_leaves.pop(key)
             unique_leaves[name] = layer
-
         return unique_leaves
 
     @cached_property
     def non_leaves(self):
         non_leaves = map(self.__non_leaf_fn, list(self.leaves.keys()))
+        # rprint(list(non_leaves))
         non_leaves = chain(*non_leaves)
         non_leaves = OrderedDict.fromkeys(chain(non_leaves))
+        rprint(list(non_leaves.keys()))
         for key in list(non_leaves.keys()):
+            # print(key)
             name = self.ln.original_name(key)
             non_leaves[name] = rgetattr(self.model, name)
 
@@ -220,7 +224,7 @@ if __name__ == "__main__":
 
     def main_func():
 
-        model = NestedModel()
+        model = Model_1()
 
         n = 4
         mi = ModelInfo(model, n)

@@ -140,7 +140,7 @@ class ModelInfo:
         leaves = self.__get_leaves(self.model)
         unique_leaves = self.__remove_duplicated_leaves(leaves)
         # rprint(unique_leaves)
-        print()
+        # print()
         # Iterate over a copy of keys by using list() to avoid issues
         for key in list(unique_leaves.keys()):
             layer = ctypes.cast(unique_leaves.pop(key), ctypes.py_object).value

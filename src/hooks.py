@@ -53,6 +53,8 @@ class ModelHookSettings:
     def model(self):
         return self.model_info.model
 
+    # def layer_order_hooks(self,module, input, output, name, children)
+
     def layer_info_hook(self, module, input, output, name, children):
         input_shape = [tuple(i.shape) for i in input]
         # print("xxxx", output[0])
